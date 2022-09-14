@@ -6,15 +6,15 @@ from hawk_eyes.tracking import BYTETracker
 from collections import defaultdict 
 import threading
 import argparse
-from main import def_value
+# from main import def_value
 
 retina_face = RetinaFace(model_name='retina_m')
 arc_face = ArcFace(model_name='arcface_m')
 bt = BYTETracker()
 landmark = Landmark()
 
-def val_value():
-    return '_'
+def def_value(): 
+    return "_"
 
 recog_data = {
     'time': [],
@@ -159,7 +159,6 @@ def draw_fancy_box(img, pt1, pt2, color, thickness, r, d):
     cv2.ellipse(img, (x2 - r, y2 - r), (r, r), 0, 0, 90, color, thickness)
 
 
-threading.Thread(target=remove_10s, args=()).start()
-threading.Thread(target=check_emb_in_data, args=()).start()
-
+# threading.Thread(target=remove_10s, args=()).start()
+# threading.Thread(target=check_emb_in_data, args=()).start()
 recog()
