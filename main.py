@@ -109,8 +109,8 @@ def recog():
             cv2.rectangle(frame, (box[0], box[1]), (box[2],box[3]), (0,0,255), 2)
             updown = landmark.get_face_angle(frame, land, False)
             look = get_look(updown[0])
-            #if view == 1:
-            if view == 1 and look !="OUT":
+            if view == 1:
+            # if view == 1 and look !="OUT":
 
                 cv2.putText(frame,f'line_view:{view}' , (box[0], box[1]-10) , cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,0), 2)
                 if tid in recog_data['trackID']:

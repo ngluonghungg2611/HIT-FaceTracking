@@ -6,34 +6,27 @@ from hawk_eyes.tracking import BYTETracker
 from collections import defaultdict 
 import threading
 import argparse
-
 from main import def_value
 
-parser = argparse.ArgumentParser(description='Input some parameter')
-args = parser.parse_args()
 retina_face = RetinaFace(model_name='retina_m')
 arc_face = ArcFace(model_name='arcface_m')
 bt = BYTETracker()
 landmark = Landmark()
-gamma = 37.8
 
 def val_value():
     return '_'
 
 recog_data = {
-    'time': [],
     'userID': [],
     'emb': [],
-    'trackID': [],
-    'count_time':[]
+    'trackID': []
 }
-# Khoi tao dictionary
+
 track_name = defaultdict(def_value)
 track_emb = {}
 current_tracking = {}
 name_idx = 0
 cap = cv2.VideoCapture(0)
-
 def recog():
     #Khoi tao bien global
     global track_emb, track_name, current_tracking, recog_data
@@ -73,17 +66,23 @@ def recog():
                     embs.append(emb)
                     ids.append(tid)
         current_tracking = {'frame: ':frame.copy(), 'track_id':ids, 'embs':embs}
-       
+        
+        
+        
         for box, tid in zip(tboxes, tids):
             box = box[:4].astype(int)
             st = str(tid)
+            
             if tid in recog_data['trackID']:
                 st = recog_data['userID'][recog_data['trackID'].index(tid)]
+        
             cv2.putText(frame, st, (box[0], box[1] - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,0), 2)
-            cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3]), (0,255,0), 2)
-        for i in range(len(recog_data['userID'])):                
+            draw_fancy_box(frame, (box[0],box[1]), (box[2],box[3]), (127, 255, 255), 2, 10, 20)
+    
+        for i in range(len(recog_data['userID'])):     
             cv2.putText(frame, '{}: {:0.3f}'.format(recog_data['userID'][i], recog_data['count_time'][i]), (10, 20+i*25), cv2.FONT_HERSHEY_DUPLEX, 1, (255,255,0), 2  )
-        cv2.imshow('qwe', frame)
+        print('ssssssss')
+        cv2.imshow('frame', frame)
         cv2.waitKey(1)
 
 def check_emb_in_data():
@@ -95,6 +94,7 @@ def check_emb_in_data():
         time.sleep(0.1)
         for idt, emb in zip(current_tracking['track_id'], current_tracking['embs']):
             if len(recog_data['emb']) == 0:
+                
                 print('check2')
                 recog_data['time'].append(time.time)
                 recog_data['userID'].append('user_{}'.format(name_idx))
@@ -131,5 +131,30 @@ def remove_10s():
                 del recog_data['count_time'][i]
                 break
         time.sleep(0.5)
+
+def draw_fancy_box(img, pt1, pt2, color, thickness, r, d):
+    x1, y1 = pt1
+    x2, y2 = pt2
+    
+    # Top left
+    cv2.line(img, (x1 + r, y1), (x1 + r + d, y1), color, thickness)
+    cv2.line(img, (x1, y1 + r), (x1, y1 + r + d), color, thickness)
+    cv2.ellipse(img, (x1 + r, y1 + r), (r, r), 180, 0, 90, color, thickness)
+
+    # Top right
+    cv2.line(img, (x2 - r, y1), (x2 - r - d, y1), color, thickness)
+    cv2.line(img, (x2, y1 + r), (x2, y1 + r + d), color, thickness)
+    cv2.ellipse(img, (x2 - r, y1 + r), (r, r), 270, 0, 90, color, thickness)
+
+    # Bottom left
+    cv2.line(img, (x1 + r, y2), (x1 + r + d, y2), color, thickness)
+    cv2.line(img, (x1, y2 - r), (x1, y2 - r - d), color, thickness)
+    cv2.ellipse(img, (x1 + r, y2 - r), (r, r), 90, 0, 90, color, thickness)
+
+    # Bottom right
+    cv2.line(img, (x2 - r, y2), (x2 - r - d, y2), color, thickness)
+    cv2.line(img, (x2, y2 - r), (x2, y2 - r - d), color, thickness)
+    cv2.ellipse(img, (x2 - r, y2 - r), (r, r), 0, 0, 90, color, thickness)
+    
 threading.Thread(target=check_emb_in_data, args=()).start()
 recog()
