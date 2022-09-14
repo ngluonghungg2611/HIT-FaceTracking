@@ -106,7 +106,8 @@ def recog():
             
             
             cv2.putText(frame, st, (box[0], box[1]-40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,0), 2)
-            cv2.rectangle(frame, (box[0], box[1]), (box[2],box[3]), (0,0,255), 2)
+            draw_fancy_box(frame, (box[0],box[1]), (box[2],box[3]), (127, 255, 255), 2, 10, 20)
+
             updown = landmark.get_face_angle(frame, land, False)
             look = get_look(updown[0])
             if view == 1:
@@ -330,9 +331,31 @@ def remove_10s():
                 # del track_emb[tid]
                 # del track_name[tid]
         time.sleep(0.5)
+def draw_fancy_box(img, pt1, pt2, color, thickness, r, d):
+    x1, y1 = pt1
+    x2, y2 = pt2
+    
+    # Top left
+    cv2.line(img, (x1 + r, y1), (x1 + r + d, y1), color, thickness)
+    cv2.line(img, (x1, y1 + r), (x1, y1 + r + d), color, thickness)
+    cv2.ellipse(img, (x1 + r, y1 + r), (r, r), 180, 0, 90, color, thickness)
 
+    # Top right
+    cv2.line(img, (x2 - r, y1), (x2 - r - d, y1), color, thickness)
+    cv2.line(img, (x2, y1 + r), (x2, y1 + r + d), color, thickness)
+    cv2.ellipse(img, (x2 - r, y1 + r), (r, r), 270, 0, 90, color, thickness)
 
+    # Bottom left
+    cv2.line(img, (x1 + r, y2), (x1 + r + d, y2), color, thickness)
+    cv2.line(img, (x1, y2 - r), (x1, y2 - r - d), color, thickness)
+    cv2.ellipse(img, (x1 + r, y2 - r), (r, r), 90, 0, 90, color, thickness)
+
+    # Bottom right
+    cv2.line(img, (x2 - r, y2), (x2 - r - d, y2), color, thickness)
+    cv2.line(img, (x2, y2 - r), (x2, y2 - r - d), color, thickness)
+    cv2.ellipse(img, (x2 - r, y2 - r), (r, r), 0, 0, 90, color, thickness)
 # @app.route('/')
+
 # def video_feed():
 #     #Video streaming route. Put this in the src attribute of an img tag
 #     return Response(recog(), mimetype='multipart/x-mixed-replace; boundary=frame')
