@@ -89,8 +89,7 @@ def recog():
             draw_fancy_box(
                 frame, (box[0], box[1]), (box[2], box[3]), (127, 255, 255), 2, 10, 20)
 
-        current_tracking = {'frame': frame.copy(
-        ), 'track_id': ids, 'embs': embs, 'times': times_check}
+        current_tracking = {'frame': frame.copy(), 'track_id': ids, 'embs': embs, 'times': times_check}
 
         for idt, emb, tbox, time_check in zip(current_tracking['track_id'], current_tracking['embs'], tboxes, current_tracking['times']):
             box = tbox[:4].astype(int)
@@ -142,7 +141,7 @@ def draw_fancy_box(img, pt1, pt2, color, thickness, r, d):
 
 
 if __name__ == '__main__':
-    
+
     recog()
 
     @app.route('/', methods=['GET'])
