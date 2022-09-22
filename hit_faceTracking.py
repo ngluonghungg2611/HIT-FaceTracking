@@ -86,17 +86,19 @@ def recog():
                 embs.append(emb)
                 ids.append(tid)
                 times_check.append(localtime)
-            draw_fancy_box(
-                frame, (box[0], box[1]), (box[2], box[3]), (127, 255, 255), 2, 10, 20)
+            draw_fancy_box(frame, (box[0], box[1]), (box[2], box[3]), (127, 255, 255), 2, 10, 20)
 
         current_tracking = {'frame': frame.copy(), 'track_id': ids, 'embs': embs, 'times': times_check}
 
         for idt, emb, tbox, time_check in zip(current_tracking['track_id'], current_tracking['embs'], tboxes, current_tracking['times']):
             box = tbox[:4].astype(int)
             dis = np.linalg.norm(database_emb['embs'] - emb, axis=1)
-
-            if (min(dis) < 25):
-                idx = np.argmin(dis)
+            dis_cosin = np.dot(database_emb['embs'], emb) / (np.linalg.norm(database_emb['embs']) * np.linalg.norm(emb))
+            print(dis_cosin)
+            # if (min(dis) < 25):
+            if (max(dis_cosin) > 0.2):
+                # idx = np.argmin(dis)
+                idx = np.argmax(dis_cosin)
                 print(database_emb['userID'][idx] + "---" + time_check)
                 cv2.putText(frame, str(database_emb['userID'][idx]), (
                     box[0], box[1]-10), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
@@ -149,3 +151,4 @@ if __name__ == '__main__':
         return Response(recog(), mimetype='multipart/x-mixed-replace; boundary=frame')
     print("App run!")
     app.run(debug=False, host='127.0.0.1', threaded=False)
+
