@@ -19,20 +19,27 @@ app = Flask(__name__)
 def def_value():
     return "_"
 
+parser = argparse.ArgumentParser(description='Chooose option')
+parser.add_argument('-d', '--dataset', type=str, default="data")
+parser.add_argument('-a', '--cosin', type=bool, default=True)
+# parser.add_argument('-l', '--local', type=bool, default=True)
+args = parser.parse_args()
+
 
 retina_face = RetinaFace(model_name='retina_s')
 arc_face = ArcFace(model_name='arcface_s')
 bt = BYTETracker()
 landmark = Landmark()
 
-
+recog_data={}
 database_emb = {
     'userID': [],
     'embs': []
 }
-img_data_list = os.listdir('data')
+data = args.dataset
+img_data_list = os.listdir(data)
 for i in range(len(img_data_list)):
-    img_path = os.path.join('data', img_data_list[i])
+    img_path = os.path.join(data, img_data_list[i])
     img = cv2.imread(img_path)
     fbox, kpss = retina_face.detect(img)
     tbox, tids = bt.predict(img, fbox)
@@ -50,13 +57,14 @@ name_idx = 0
 
 cap = cv2.VideoCapture(0)
 
-
 def recog():
-    global track_emb, track_name, current_tracking
+    global track_emb, track_name, current_tracking, recog_data
     ret, _ = cap.read()
     # t = time.time()
-
+    prev_frame_time = 0
+    new_frame_time = 0
     while ret:
+        new_frame_time = time.time()
         _, frame = cap.read()
         frame = cv2.flip(frame, 1)
         fboxes, kpss = retina_face.detect(frame)
@@ -88,33 +96,49 @@ def recog():
                 times_check.append(localtime)
             draw_fancy_box(frame, (box[0], box[1]), (box[2], box[3]), (127, 255, 255), 2, 10, 20)
 
-        current_tracking = {'frame': frame.copy(), 'track_id': ids, 'embs': embs, 'times': times_check}
-
+        current_tracking = {'track_id': ids, 'embs': embs, 'times': times_check}
+        
+        name = []
+        msv = []
+        time_checkin = []
         for idt, emb, tbox, time_check in zip(current_tracking['track_id'], current_tracking['embs'], tboxes, current_tracking['times']):
             box = tbox[:4].astype(int)
-            dis = np.linalg.norm(database_emb['embs'] - emb, axis=1)
+            # dis = np.linalg.norm(database_emb['embs'] - emb, axis=1)
             dis_cosin = np.dot(database_emb['embs'], emb) / (np.linalg.norm(database_emb['embs']) * np.linalg.norm(emb))
-            print(dis_cosin)
             # if (min(dis) < 25):
-            if (max(dis_cosin) > 0.2):
-                # idx = np.argmin(dis)
-                idx = np.argmax(dis_cosin)
-                print(database_emb['userID'][idx] + "---" + time_check)
-                cv2.putText(frame, str(database_emb['userID'][idx]), (
-                    box[0], box[1]-10), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
-            else:
-                print("Stranger")
-                cv2.putText(
-                    frame, "Stranger", (box[0], box[1]-10), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+            if args.cosin:
+                t = time.time()
+                if (max(dis_cosin) > 0.1):
+                    # idx = np.argmin(dis)
+                    idx = np.argmax(dis_cosin)
+                    # if (time.time() - t) > 
+                    print("Name: " + database_emb['userID'][idx].split('_')[0] + " --- MSV: " + database_emb['userID'][idx].split('_')[1] + " --- Time: " + time_check)
+                    name.append(database_emb['userID'][idx].split('_')[0])
+                    msv.append(database_emb['userID'][idx].split('_')[1])
+                    time_checkin.append(str(time_check))
+                    cv2.putText(frame, str(database_emb['userID'][idx]), (box[0], box[1]-10), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+                else:
+                    print("Stranger")
+                    cv2.putText(
+                        frame, "Stranger", (box[0], box[1]-10), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+            recog_data={'name': name, 'msv': msv, 'time_checkin': time_checkin}
         print("==============================")
         # time.sleep(0.5)
-        # cv2.imshow('qwe', frame)
-        # cv2.waitKey(1)
+        
         # cv2.putText(frame, "aaa",(50,50), cv2.FONT_HERSHEY_COMPLEX, 1, (255,255,0), 1)
-        retval, buffer = cv2.imencode('.jpg', frame)
-        frame1 = buffer.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame1 + b'\r\n')
+        # if args.local != True:
+        fps = 1/(new_frame_time - prev_frame_time)
+        prev_frame_time = new_frame_time
+        # fps = int(cap.get(cv2.CAP_PROP_FPS))
+        cv2.putText(frame, 'fps: {}'.format(int(fps)),  (frame.shape[1]-150, frame.shape[0]-100), cv2.FONT_HERSHEY_DUPLEX, 1, (0,255,0), 2 )
+        cv2.imshow('qwe', frame)
+        if cv2.waitKey(1) & 0xFF == ord('x'):
+            break
+        # else:
+        # retval, buffer = cv2.imencode('.jpg', frame)
+        # frame1 = buffer.tobytes()
+        # yield (b'--frame\r\n'
+        #     b'Content-Type: image/jpeg\r\n\r\n' + frame1 + b'\r\n')
 
 
 def draw_fancy_box(img, pt1, pt2, color, thickness, r, d):
@@ -143,12 +167,14 @@ def draw_fancy_box(img, pt1, pt2, color, thickness, r, d):
 
 
 if __name__ == '__main__':
-
+    
     recog()
-
-    @app.route('/', methods=['GET'])
-    def video_feed():
-        return Response(recog(), mimetype='multipart/x-mixed-replace; boundary=frame')
-    print("App run!")
-    app.run(debug=False, host='127.0.0.1', threaded=False)
-
+    print(recog_data)
+    # @app.route('/', methods=['GET'])
+    # def video_feed():
+    #     return Response(recog(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    # print("App run!")
+    # app.run(debug=False, host='127.0.0.1', threaded=False)
+    
+    # print(current_tracking['track_id'])
+    # print(current_tracking['times'])
